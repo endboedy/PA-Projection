@@ -1,0 +1,246 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Weekly Loader Performance</title>
+    <style>
+        body {
+            font-family: 'Arial Narrow', sans-serif;
+            background-color: white;
+            font-size: 11px;
+        }
+        .table-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        table {
+            border-collapse: collapse;
+            width: 300px;
+            table-layout: fixed;
+        }
+        th, td {
+            border: 1px solid #ccc;
+            text-align: center;
+            padding: 4px;
+            width: 50px;
+        }
+        th:first-child, td:first-child {
+            width: 100px;
+        }
+        th {
+            background-color: black;
+            color: white;
+        }
+        .rfu-row {
+            background-color: #006400;
+            color: white;
+        }
+        .bid-row {
+            background-color: #555;
+            color: white;
+        }
+        .pa-row {
+            background-color: #b8860b;
+            color: white;
+        }
+        td[contenteditable="true"] {
+            outline: none;
+        }
+        .controls {
+            margin-bottom: 20px;
+        }
+        button {
+            margin-right: 10px;
+            padding: 5px 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Weekly Loader Performance</h2>
+    <div class="controls">
+        <select id="categorySelect">
+            <option value="Loading">Loading</option>
+            <option value="Hauling">Hauling</option>
+            <option value="Dozing">Dozing</option>
+            <option value="Grading">Grading</option>
+            <option value="Auxiliary Coal Getting">Auxiliary Coal Getting</option>
+            <option value="Coal Hauling">Coal Hauling</option>
+        </select>
+        <button onclick="addNewTables()">Add New</button>
+        <button onclick="saveToJson()">Save JSON</button>
+        <input type="file" id="jsonFile" onchange="loadFromJson(event)">
+        <button onclick="print()">Print PDF</button>
+    </div>
+    <div id="tablesArea"></div>
+
+    <script>
+        const weeks = ["W1", "W2", "W3", "W4", "W5"];
+        const metrics = ["POP", "LTR", "Unscheduled", "PM", "Total RFU", "Total BID", "PA Projection"];
+
+        function createTable(title) {
+            const table = document.createElement("table");
+            const thead = document.createElement("thead");
+            const headerRow = document.createElement("tr");
+            const thTitle = document.createElement("th");
+            thTitle.textContent = title;
+            headerRow.appendChild(thTitle);
+            weeks.forEach(week => {
+                const th = document.createElement("th");
+                th.textContent = week;
+                headerRow.appendChild(th);
+            });
+            thead.appendChild(headerRow);
+            table.appendChild(thead);
+
+            const tbody = document.createElement("tbody");
+            metrics.forEach(metric => {
+                const row = document.createElement("tr");
+                row.className = metric === "Total RFU" ? "rfu-row" :
+                                metric === "Total BID" ? "bid-row" :
+                                metric === "PA Projection" ? "pa-row" : "";
+                const tdLabel = document.createElement("td");
+                tdLabel.textContent = metric;
+                row.appendChild(tdLabel);
+                weeks.forEach(() => {
+                    const td = document.createElement("td");
+                    td.contentEditable = metric === "POP" || metric === "LTR" || metric === "Unscheduled" || metric === "PM";
+                    td.textContent = "";
+                    row.appendChild(td);
+                });
+                tbody.appendChild(row);
+            });
+            table.appendChild(tbody);
+            return table;
+        }
+
+        function addNewTables() {
+            const category = document.getElementById("categorySelect").value;
+            const container = document.createElement("div");
+            container.className = "table-container";
+
+            const sitarumTable = createTable(category + " - Sitarum");
+            const tabuhanTable = createTable(category + " - Tabuhan");
+            const bmbTable = createTable(category + " - BMB Cluster");
+
+            container.appendChild(sitarumTable);
+            container.appendChild(tabuhanTable);
+            container.appendChild(bmbTable);
+            document.getElementById("tablesArea").appendChild(container);
+
+            setInterval(() => updateBMBCluster(sitarumTable, tabuhanTable, bmbTable), 1000);
+        }
+
+        function updateBMBCluster(sitarum, tabuhan, bmb) {
+            for (let i = 0; i < metrics.length; i++) {
+                for (let j = 1; j <= weeks.length; j++) {
+                    const sitarumCell = sitarum.rows[i + 1].cells[j];
+                    const tabuhanCell = tabuhan.rows[i + 1].cells[j];
+                    const bmbCell = bmb.rows[i + 1].cells[j];
+
+                    if (i < 4) {
+                        const val1 = parseFloat(sitarumCell.textContent) || 0;
+                        const val2 = parseFloat(tabuhanCell.textContent) || 0;
+                        bmbCell.textContent = val1 + val2;
+                    } else if (metrics[i] === "Total RFU") {
+                        const pop = parseFloat(bmb.rows[1].cells[j].textContent) || 0;
+                        const ltr = parseFloat(bmb.rows[2].cells[j].textContent) || 0;
+                        const uns = parseFloat(bmb.rows[3].cells[j].textContent) || 0;
+                        const pm = parseFloat(bmb.rows[4].cells[j].textContent) || 0;
+                        bmbCell.textContent = pop - (ltr + uns + pm);
+                    } else if (metrics[i] === "Total BID") {
+                        const ltr = parseFloat(bmb.rows[2].cells[j].textContent) || 0;
+                        const uns = parseFloat(bmb.rows[3].cells[j].textContent) || 0;
+                        const pm = parseFloat(bmb.rows[4].cells[j].textContent) || 0;
+                        bmbCell.textContent = ltr + uns + pm;
+                    } else if (metrics[i] === "PA Projection") {
+                        const pop = parseFloat(bmb.rows[1].cells[j].textContent) || 0;
+                        const rfu = parseFloat(bmb.rows[5].cells[j].textContent) || 0;
+                        bmbCell.textContent = pop ? ((rfu / pop) * 100).toFixed(2) : "";
+                    }
+                }
+            }
+        }
+
+        function saveToJson() {
+            const data = [];
+            document.querySelectorAll(".table-container").forEach(container => {
+                const tables = container.querySelectorAll("table");
+                const group = [];
+                tables.forEach(table => {
+                    const title = table.querySelector("th").textContent;
+                    const rows = table.querySelectorAll("tbody tr");
+                    const tableData = { title, data: {} };
+                    rows.forEach(row => {
+                        const label = row.cells[0].textContent;
+                        tableData.data[label] = [];
+                        for (let i = 1; i < row.cells.length; i++) {
+                            tableData.data[label].push(row.cells[i].textContent);
+                        }
+                    });
+                    group.push(tableData);
+                });
+                data.push(group);
+            });
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+            const a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = "loader_data.json";
+            a.click();
+        }
+
+        function loadFromJson(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = JSON.parse(e.target.result);
+                document.getElementById("tablesArea").innerHTML = "";
+                content.forEach(group => {
+                    const container = document.createElement("div");
+                    container.className = "table-container";
+                    group.forEach(tableData => {
+                        const table = document.createElement("table");
+                        const thead = document.createElement("thead");
+                        const headerRow = document.createElement("tr");
+                        const thTitle = document.createElement("th");
+                        thTitle.textContent = tableData.title;
+                        headerRow.appendChild(thTitle);
+                        weeks.forEach(week => {
+                            const th = document.createElement("th");
+                            th.textContent = week;
+                            headerRow.appendChild(th);
+                        });
+                        thead.appendChild(headerRow);
+                        table.appendChild(thead);
+
+                        const tbody = document.createElement("tbody");
+                        metrics.forEach(metric => {
+                            const row = document.createElement("tr");
+                            row.className = metric === "Total RFU" ? "rfu-row" :
+                                            metric === "Total BID" ? "bid-row" :
+                                            metric === "PA Projection" ? "pa-row" : "";
+                            const tdLabel = document.createElement("td");
+                            tdLabel.textContent = metric;
+                            row.appendChild(tdLabel);
+                            tableData.data[metric].forEach((val, idx) => {
+                                const td = document.createElement("td");
+                                td.contentEditable = metric === "POP" || metric === "LTR" || metric === "Unscheduled" || metric === "PM";
+                                td.textContent = val;
+                                row.appendChild(td);
+                            });
+                            tbody.appendChild(row);
+                        });
+                        table.appendChild(tbody);
+                        container.appendChild(table);
+                    });
+                    document.getElementById("tablesArea").appendChild(container);
+                });
+            };
+            reader.readAsText(file);
+        }
+    </script>
+</body>
+</html>
