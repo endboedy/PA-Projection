@@ -1,121 +1,247 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
   <meta charset="UTF-8">
-  <title>Work Order Collapse</title>
+  <title>Daily Down Equipment</title>
   <style>
-    body { font-family: Arial, sans-serif; font-size: 12px; margin: 20px; }
-    table { border-collapse: collapse; width: 100%; margin-bottom: 30px; }
-    th, td { border: 1px solid #999; padding: 4px; text-align: left; }
-    th { background: #eee; }
-    .action-text { color: blue; cursor: pointer; margin-right: 6px; }
-    .sub-row { background: #f9f9f9; }
-    .toggle-sub { cursor: pointer; font-weight: bold; margin-right: 5px; }
+    body { font-family: 'Aptos Narrow', Arial, sans-serif; font-size: 13px; background-color: #f4f4f4; padding: 20px; }
+    h2 { text-align: center; margin-bottom: 10px; }
+    table { width: 100%; border-collapse: collapse; background-color: #fff; margin-top: 10px; table-layout: fixed; }
+    th, td { border: 1px solid #ccc; padding: 4px; vertical-align: top; font-weight: normal; word-wrap: break-word; }
+    th { background-color: #eee; }
+    td[contenteditable="true"] { background-color: #ffffcc; }
+    span.action-text { cursor: pointer; color: blue; text-decoration: underline; margin-left: 5px; }
+    .top-buttons, .bottom-buttons { display: flex; justify-content: flex-end; margin: 10px 0; gap: 10px; }
+    .category-section { margin-bottom: 40px; }
+    th:nth-child(1), td:nth-child(1) { width: 40px; }
+    th:nth-child(2), td:nth-child(2) { width: 200px; }
+    th:nth-child(3), td:nth-child(3) { width: 250px; }
+    th:nth-child(4), td:nth-child(4) { width: 150px; }
+    th:nth-child(5), td:nth-child(5) { width: 150px; }
+    th:nth-child(6), td:nth-child(6) { width: 100px; }
+    th:nth-child(7), td:nth-child(7) { width: 200px; }
+    th:nth-child(8), td:nth-child(8) { width: 120px; }
+    .category-header {
+      background-color: #ffeb99;
+      color: black;
+      padding: 6px;
+      font-weight: bold;
+      text-align: left;
+      border: 1px solid #000;
+      border-radius: 4px;
+    }
+    .category-header span.action-text { margin-left: 10px; }
+    input[type="date"] { width: 100%; border: none; background: transparent; }
   </style>
 </head>
 <body>
+<h2>Daily Down Equipment</h2>
 
-<h2>Work Order with Collapse/Expand</h2>
-<div id="tables"></div>
+<div class="top-buttons">
+  <label for="jsonFileInput">Choose File:</label>
+  <input type="file" id="jsonFileInput" accept=".json" />
+  <button onclick="loadFromJSON()">Load JSON</button>
+  <button onclick="saveToJSON()">Save to JSON</button>
+</div>
+
+<div class="bottom-buttons">
+  <input type="text" id="newCategoryInput" placeholder="Nama Kategori Baru" />
+  <button onclick="addNewCategory()">Add Category</button>
+</div>
+
+<div id="categoryContainer"></div>
 
 <script>
 let dataByCategory = {
-  "Loading": [
-    { 
-      no: 1, equipment: "Excavator A", description: "Main unit", down: "08:00", up: "12:00", order: "ORD-123", remarks: "OK",
-      collapsed: false,
-      items: [
-        {equipment:"Bucket", description:"Crack", order:"ORD-123-1", remarks:"Replace"},
-        {equipment:"Hydraulic", description:"Leak", order:"ORD-123-2", remarks:"Check"}
+  "Unit A":[
+    {
+      no:1,
+      items:[
+        {equipment:"DT 123",description:"Engine Trouble",down:"2025-09-02",up:"2025-09-03",order:"4700735829",remarks:"Waiting parts"}
       ]
-    },
-    { 
-      no: 2, equipment: "Loader B", description: "Main unit", down: "09:00", up: "13:00", order: "ORD-456", remarks: "Delay",
-      collapsed: false,
-      items: []
     }
   ]
 };
 
-// render semua tabel
-function renderAllTables() {
-  const container = document.getElementById("tables");
+function sanitizeId(id){return id.replace(/\s+/g,'_').replace(/[^\w\-]/g,'');}
+function escapeHtml(str){if(str==null) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function recalculateNo(category){if(!dataByCategory[category]) return; dataByCategory[category].forEach((entry,idx)=>entry.no=idx+1);}
+
+// Update semua data dari table
+function updateAllFromTable(){
+  Object.keys(dataByCategory).forEach(category=>{
+    const safeId = sanitizeId(category);
+    const tbody = document.querySelector('#tbody-'+safeId);
+    if(!tbody) return;
+    let rowCount = 0;
+    dataByCategory[category].forEach(entry=>{
+      entry.items.forEach((item,idx)=>{
+        const row = tbody.querySelectorAll('tr')[rowCount++];
+        const cells = row.querySelectorAll('td');
+        item.equipment = cells[1].innerText.trim();
+        item.description = cells[2].innerText.trim();
+        if(idx===0){ // hanya row utama yg simpan Down/Up
+          item.down = cells[3].querySelector("input").value;
+          item.up = cells[4].querySelector("input").value;
+        }
+        item.order = cells[5].innerText.trim();
+        item.remarks = cells[6].innerText.trim();
+      });
+    });
+  });
+}
+
+function renderAllTables(){
+  const container = document.getElementById("categoryContainer");
   container.innerHTML = "";
-  for (const category in dataByCategory) {
-    const table = document.createElement("table");
-    let html = `<tr>
-      <th>No</th><th></th><th>Equipment</th><th>Description</th>
-      <th>Down Time</th><th>Up Time</th><th>Order</th><th>Remarks</th><th>Action</th>
-    </tr>`;
+  Object.keys(dataByCategory).forEach(category=>{
+    recalculateNo(category);
+    const safeId = sanitizeId(category);
+    const section = document.createElement("div");
+    section.classList.add("category-section");
+    section.innerHTML = `
+      <div class="category-header">
+        <span id="catTitle-${safeId}">${escapeHtml(category)}</span>
+        <span class="action-text" onclick='editCategory(${JSON.stringify(category)})'>Edit</span>
+        <span class="action-text" onclick='deleteCategory(${JSON.stringify(category)})'>Delete</span>
+      </div>
+      <table>
+        <thead><tr>
+          <th>No</th><th>Equipment</th><th>Description</th><th>Down Time</th><th>Up Time</th><th>Order</th><th>Remarks</th><th>Action</th>
+        </tr></thead>
+        <tbody id="tbody-${safeId}"></tbody>
+        <tfoot><tr><td colspan="8"><button onclick='addIssue(${JSON.stringify(category)})'>Add New</button></td></tr></tfoot>
+      </table>
+    `;
+    container.appendChild(section);
 
-    dataByCategory[category].forEach(entry => {
-      html += `<tr>
-        <td>${entry.no}</td>
-        <td><span class="toggle-sub" onclick="toggleSub('${category}',${entry.no})">${entry.collapsed ? '[+]' : '[-]'}</span></td>
-        <td>${entry.equipment}</td>
-        <td>${entry.description}</td>
-        <td>${entry.down}</td>
-        <td>${entry.up}</td>
-        <td>${entry.order}</td>
-        <td>${entry.remarks}</td>
-        <td>
-          <span class="action-text" onclick="addSubItem('${category}',${entry.no})">Add Sub</span>
-        </td>
-      </tr>`;
-
-      // render sub jika tidak collapsed
-      if (!entry.collapsed) {
-        entry.items.forEach((sub, idx) => {
-          html += `<tr class="sub-row">
-            <td>${entry.no}.${idx+1}</td>
-            <td></td>
-            <td>${sub.equipment}</td>
-            <td>${sub.description}</td>
-            <td></td>
-            <td></td>
-            <td>${sub.order}</td>
-            <td>${sub.remarks}</td>
-            <td>
-              <span class="action-text" onclick="deleteSub('${category}',${entry.no},${idx})">Delete</span>
-            </td>
-          </tr>`;
-        });
-      }
+    const tbody = section.querySelector('#tbody-'+safeId);
+    dataByCategory[category].forEach(entry=>{
+      entry.items.forEach((item,subIdx)=>{
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${subIdx===0?entry.no:""}</td>
+          <td contenteditable="true">${escapeHtml(item.equipment)}</td>
+          <td contenteditable="true">${escapeHtml(item.description)}</td>
+          <td>${subIdx===0?<input type="date" value="${item.down||""}">:""}</td>
+          <td>${subIdx===0?<input type="date" value="${item.up||""}">:""}</td>
+          <td contenteditable="true">${escapeHtml(item.order)}</td>
+          <td contenteditable="true">${escapeHtml(item.remarks)}</td>
+          <td>
+            <span class="action-text" onclick='addSubItem(${JSON.stringify(category)},${entry.no})'>Add Sub</span>
+            <span class="action-text" onclick='saveEdit(${JSON.stringify(category)},${entry.no},${subIdx})'>Save</span>
+            <span class="action-text" onclick='deleteItem(${JSON.stringify(category)},${entry.no},${subIdx})'>Delete</span>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
     });
-
-    table.innerHTML = <caption><b>${category}</b></caption> + html;
-    container.appendChild(table);
-  }
+  });
 }
 
-function toggleSub(category,no){
-  const entry = dataByCategory[category].find(d=>d.no===no);
-  if(entry){
-    entry.collapsed = !entry.collapsed;
+// --- Category edit/delete ---
+function editCategory(category){
+  const safeId = sanitizeId(category);
+  const catTitle = document.getElementById('catTitle-'+safeId);
+  if(!catTitle) return;
+  catTitle.innerHTML = `
+    <input type="text" id="editCatInput-${safeId}" value="${escapeHtml(category)}" style="width:200px;" />
+    <button onclick='saveCategoryName(${JSON.stringify(category)})'>Save</button>
+    <button onclick="renderAllTables()">Cancel</button>
+  `;
+}
+function saveCategoryName(oldName){
+  const safeId = sanitizeId(oldName);
+  const input = document.getElementById('editCatInput-'+safeId);
+  if(!input) return;
+  const newName = input.value.trim();
+  if(!newName){alert("Nama kategori tidak boleh kosong"); return;}
+  if(dataByCategory[newName] && newName!==oldName){alert("Nama kategori sudah ada"); return;}
+  dataByCategory[newName] = dataByCategory[oldName];
+  if(newName!==oldName) delete dataByCategory[oldName];
+  renderAllTables();
+}
+function deleteCategory(category){
+  if(confirm('Yakin hapus kategori "'+category+'"?')){
+    delete dataByCategory[category];
     renderAllTables();
   }
 }
 
+// --- Issue & Sub Item ---
+function addNewCategory(){
+  const input=document.getElementById("newCategoryInput");
+  const newCategory=input.value.trim();
+  if(newCategory&&!dataByCategory[newCategory]){
+    dataByCategory[newCategory]=[];
+    input.value="";
+    renderAllTables();
+  } else {
+    alert("Kategori sudah ada atau kosong.");
+  }
+}
+function addIssue(category){
+  updateAllFromTable();
+  const newIssue={
+    no:dataByCategory[category].length+1,
+    items:[{equipment:"New Unit",description:"",down:"",up:"",order:"",remarks:""}]
+  };
+  dataByCategory[category].push(newIssue);
+  renderAllTables();
+}
 function addSubItem(category,no){
-  const entry = dataByCategory[category].find(d=>d.no===no);
+  updateAllFromTable();
+  const entry=dataByCategory[category].find(d=>d.no===no);
   if(entry){
-    entry.items.push({
-      equipment:"", description:"", order:"", remarks:""
-    });
+    entry.items.push({equipment:"",description:"",down:"",up:"",order:"",remarks:""});
     renderAllTables();
   }
 }
-
-function deleteSub(category,no,idx){
-  const entry = dataByCategory[category].find(d=>d.no===no);
+function saveEdit(category,no,idx){
+  updateAllFromTable();
+  renderAllTables();
+}
+function deleteItem(category,no,idx){
+  updateAllFromTable();
+  const entry=dataByCategory[category].find(d=>d.no===no);
   if(entry){
     entry.items.splice(idx,1);
+    if(entry.items.length===0){
+      dataByCategory[category]=dataByCategory[category].filter(d=>d.no!==no);
+    }
     renderAllTables();
   }
+}
+
+// --- Save / Load JSON ---
+function saveToJSON(){
+  updateAllFromTable();
+  const json=JSON.stringify({dataByCategory},null,2);
+  const blob=new Blob([json],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="daily_down_equipment.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function loadFromJSON(){
+  const fileInput=document.getElementById("jsonFileInput");
+  const file=fileInput.files[0];
+  if(!file){alert("Pilih file JSON terlebih dahulu."); return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const parsed=JSON.parse(e.target.result);
+      dataByCategory=parsed.dataByCategory||{};
+      Object.keys(dataByCategory).forEach(cat=>recalculateNo(cat));
+      renderAllTables();
+    }catch(err){alert("Format JSON tidak valid.");}
+  };
+  reader.readAsText(file);
 }
 
 renderAllTables();
 </script>
-
 </body>
 </html>
