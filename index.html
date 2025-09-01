@@ -113,12 +113,19 @@ function renderAllTables(){
         const tr = document.createElement("tr");
         tr.innerHTML = `
           <td>${subIdx===0?entry.no:""}</td>
-          <td contenteditable="true">${escapeHtml(item.equipment)}</td>
-          <td contenteditable="true">${escapeHtml(item.description.join("\n")).replace(/\n/g,"<br>")}</td>
-          <td contenteditable="true">${escapeHtml(item.downtime)}</td>
-          <td contenteditable="true">${escapeHtml(item.uptime)}</td>
-          <td contenteditable="true">${escapeHtml(item.order)}</td>
-          <td contenteditable="true">${escapeHtml(item.remarks)}</td>
+    
+<td>${subIdx === 0 ? entry.no : ""}</td>
+<td contenteditable="true">${escapeHtml(item.equipment || "")}</td>
+<td contenteditable="true">
+  ${escapeHtml(Array.isArray(item.description) ? item.description.join("\n") : item.description || "")
+    .replace(/\n/g, "<br>")}
+</td>
+<td contenteditable="true">${escapeHtml(item.downtime || "")}</td>
+<td contenteditable="true">${escapeHtml(item.uptime || "")}</td>
+<td contenteditable="true">${escapeHtml(item.order || "")}</td>
+<td contenteditable="true">${escapeHtml(item.remarks || "")}</td>
+<td></td>
+
           <td>
             <span class="action-text" onclick='addSubItem(${JSON.stringify(category)},${entry.no})'>Add Sub</span>
             <span class="action-text" onclick='saveEdit(${JSON.stringify(category)},${entry.no},${subIdx})'>Save</span>
