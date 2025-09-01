@@ -22,12 +22,12 @@
     th:nth-child(7), td:nth-child(7) { width: 200px; }
     th:nth-child(8), td:nth-child(8) { width: 120px; }
     .category-header {
-      background-color: #ffeb99; 
+      background-color: #ffeb99;
       color: black;
       padding: 6px;
       font-weight: bold;
       text-align: left;
-      border: 1px solid #000; 
+      border: 1px solid #000;
       border-radius: 4px;
     }
     .category-header span.action-text { margin-left: 10px; }
@@ -53,14 +53,21 @@
 
 <script>
 let dataByCategory = {
-  "Unit A":[{no:1,items:[{equipment:"DT 123",description:"Engine Trouble",down:"2025-09-02",up:"2025-09-03",order:"4700735829",remarks:"Waiting parts"}]}],
+  "Unit A":[
+    {
+      no:1,
+      items:[
+        {equipment:"DT 123",description:"Engine Trouble",down:"2025-09-02",up:"2025-09-03",order:"4700735829",remarks:"Waiting parts"}
+      ]
+    }
+  ]
 };
 
 function sanitizeId(id){return id.replace(/\s+/g,'_').replace(/[^\w\-]/g,'');}
 function escapeHtml(str){if(str==null) return ''; return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 function recalculateNo(category){if(!dataByCategory[category]) return; dataByCategory[category].forEach((entry,idx)=>entry.no=idx+1);}
 
-// Update semua data dari contenteditable sebelum render / add / save
+// Update semua data dari table
 function updateAllFromTable(){
   Object.keys(dataByCategory).forEach(category=>{
     const safeId = sanitizeId(category);
@@ -119,6 +126,7 @@ function renderAllTables(){
           <td contenteditable="true">${escapeHtml(item.order)}</td>
           <td contenteditable="true">${escapeHtml(item.remarks)}</td>
           <td>
+            <span class="action-text" onclick='addSubItem(${JSON.stringify(category)},${entry.no})'>Add Sub</span>
             <span class="action-text" onclick='saveEdit(${JSON.stringify(category)},${entry.no},${subIdx})'>Save</span>
             <span class="action-text" onclick='deleteItem(${JSON.stringify(category)},${entry.no},${subIdx})'>Delete</span>
           </td>
@@ -151,17 +159,85 @@ function saveCategoryName(oldName){
   if(newName!==oldName) delete dataByCategory[oldName];
   renderAllTables();
 }
-function deleteCategory(category){ if(confirm('Yakin hapus kategori "'+category+'"?')){ delete dataByCategory[category]; renderAllTables(); } }
+function deleteCategory(category){
+  if(confirm('Yakin hapus kategori "'+category+'"?')){
+    delete dataByCategory[category];
+    renderAllTables();
+  }
+}
 
-// --- Issue ---
-function addNewCategory(){ const input=document.getElementById("newCategoryInput"); const newCategory=input.value.trim(); if(newCategory&&!dataByCategory[newCategory]){dataByCategory[newCategory]=[]; input.value=""; renderAllTables();} else {alert("Kategori sudah ada atau kosong.");} }
-function addIssue(category){ updateAllFromTable(); const newIssue={no:dataByCategory[category].length+1,items:[{equipment:"New Unit",description:"",down:"",up:"",order:"",remarks:""}]}; dataByCategory[category].push(newIssue); renderAllTables(); }
-function saveEdit(category,no,idx){ updateAllFromTable(); renderAllTables(); }
-function deleteItem(category,no,idx){ updateAllFromTable(); const entry=dataByCategory[category].find(d=>d.no===no); if(entry){entry.items.splice(idx,1); if(entry.items.length===0){dataByCategory[category]=dataByCategory[category].filter(d=>d.no!==no);} renderAllTables();} }
+// --- Issue & Sub Item ---
+function addNewCategory(){
+  const input=document.getElementById("newCategoryInput");
+  const newCategory=input.value.trim();
+  if(newCategory&&!dataByCategory[newCategory]){
+    dataByCategory[newCategory]=[];
+    input.value="";
+    renderAllTables();
+  } else {
+    alert("Kategori sudah ada atau kosong.");
+  }
+}
+function addIssue(category){
+  updateAllFromTable();
+  const newIssue={
+    no:dataByCategory[category].length+1,
+    items:[{equipment:"New Unit",description:"",down:"",up:"",order:"",remarks:""}]
+  };
+  dataByCategory[category].push(newIssue);
+  renderAllTables();
+}
+function addSubItem(category,no){
+  updateAllFromTable();
+  const entry=dataByCategory[category].find(d=>d.no===no);
+  if(entry){
+    entry.items.push({equipment:"",description:"",down:"",up:"",order:"",remarks:""});
+    renderAllTables();
+  }
+}
+function saveEdit(category,no,idx){
+  updateAllFromTable();
+  renderAllTables();
+}
+function deleteItem(category,no,idx){
+  updateAllFromTable();
+  const entry=dataByCategory[category].find(d=>d.no===no);
+  if(entry){
+    entry.items.splice(idx,1);
+    if(entry.items.length===0){
+      dataByCategory[category]=dataByCategory[category].filter(d=>d.no!==no);
+    }
+    renderAllTables();
+  }
+}
 
 // --- Save / Load JSON ---
-function saveToJSON(){ updateAllFromTable(); const json=JSON.stringify({dataByCategory},null,2); const blob=new Blob([json],{type:"application/json"}); const url=URL.createObjectURL(blob); const a=document.createElement("a"); a.href=url; a.download="daily_down_equipment.json"; a.click(); URL.revokeObjectURL(url); }
-function loadFromJSON(){ const fileInput=document.getElementById("jsonFileInput"); const file=fileInput.files[0]; if(!file){alert("Pilih file JSON terlebih dahulu."); return;} const reader=new FileReader(); reader.onload=function(e){ try{ const parsed=JSON.parse(e.target.result); dataByCategory=parsed.dataByCategory||{}; Object.keys(dataByCategory).forEach(cat=>recalculateNo(cat)); renderAllTables(); }catch(err){alert("Format JSON tidak valid.");} }; reader.readAsText(file); }
+function saveToJSON(){
+  updateAllFromTable();
+  const json=JSON.stringify({dataByCategory},null,2);
+  const blob=new Blob([json],{type:"application/json"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url;
+  a.download="daily_down_equipment.json";
+  a.click();
+  URL.revokeObjectURL(url);
+}
+function loadFromJSON(){
+  const fileInput=document.getElementById("jsonFileInput");
+  const file=fileInput.files[0];
+  if(!file){alert("Pilih file JSON terlebih dahulu."); return;}
+  const reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      const parsed=JSON.parse(e.target.result);
+      dataByCategory=parsed.dataByCategory||{};
+      Object.keys(dataByCategory).forEach(cat=>recalculateNo(cat));
+      renderAllTables();
+    }catch(err){alert("Format JSON tidak valid.");}
+  };
+  reader.readAsText(file);
+}
 
 renderAllTables();
 </script>
