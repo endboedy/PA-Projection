@@ -34,7 +34,7 @@
   </style>
 </head>
 <body>
-<h2>RTP EM BMB</h2>
+<h2>Daily Down Equipment</h2>
 
 <div class="top-buttons">
   <label for="jsonFileInput">Choose File:</label>
@@ -45,16 +45,16 @@
 
 <div class="bottom-buttons">
   <input type="text" id="newCategoryInput" placeholder="Nama Kategori Baru" />
-  <button onclick="addNewCategory()">Add Category RTP</button>
+  <button onclick="addNewCategory()">Add Category Equipment</button>
 </div>
 
 <div id="categoryContainer"></div>
 
 <script>
 let dataByCategory = {
-  "RTP PM Acc":[{no:1,items:[{issue:"List Tools 800 item (Teregister Asset)",actions:["Update collect masing-masing section status tools"],pic:"By Section",due:"Juni",status:"Continue",remarks:"Continue SE; Done; Track; Done; Wheel: 15 Juli; Audit: 23 Juli"}]}],
-  "RTP PA":[],
-  "RTP MXXTBF":[]
+  "Hauling":[{no:1,items:[{issue:"List Tools 800 item (Teregister Asset)",actions:["Update collect masing-masing section status tools"],pic:"By Section",due:"Juni",status:"Continue",remarks:"Continue SE; Done; Track; Done; Wheel: 15 Juli; Audit: 23 Juli"}]}],
+  "Loading":[],
+  "Dozing":[]
 };
 
 function sanitizeId(id){return id.replace(/\s+/g,'_').replace(/[^\w\-]/g,'');}
