@@ -1,243 +1,105 @@
 
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Weekly Loader Performance</title>
-    <style>
-        body {
-            font-family: 'Arial Narrow', sans-serif;
-            background-color: white;
-            font-size: 11px;
-        }
-        table {
-            border-collapse: collapse;
-            margin: 10px;
-            width: 300px;
-            table-layout: fixed;
-        }
-        th, td {
-            border: 1px solid #ccc;
-            padding: 4px;
-            text-align: center;
-            width: 50px;
-        }
-        th.loader-header {
-            background-color: #333;
-            color: white;
-            width: 100px;
-        }
-        th.week-header {
-            background-color: black;
-            color: white;
-        }
-        tr.rfu td {
-            background-color: darkgreen;
-            color: white;
-        }
-        tr.bid td {
-            background-color: #555;
-            color: white;
-        }
-        tr.pa td {
-            background-color: #999900;
-            color: white;
-        }
-        td[contenteditable="true"] {
-            outline: none;
-        }
-        .table-container {
-            display: flex;
-            flex-direction: row;
-            flex-wrap: wrap;
-        }
-        .table-group {
-            display: flex;
-            flex-direction: row;
-        }
-        button {
-            margin: 10px;
-        }
-    </style>
+  <title>Input Tabel ke Grafik</title>
+  <script src.jsdelivr.net/npm/chart.js
+  <style>
+    table, th, td {
+      border: 1px solid black;
+      border-collapse: collapse;
+      padding: 5px;
+    }
+    table {
+      margin-bottom: 20px;
+    }
+  </style>
 </head>
 <body>
-    <h2>Weekly Loader Performance</h2>
-    <button onclick="addNewGroup()">Add New</button>
-    <button onclick="saveJSON()">Save JSON</button>
-    <button onclick="loadJSON()">Load JSON</button>
-    <div id="tables" class="table-container"></div>
 
-    <script>
-        const weeks = ['W1', 'W2', 'W3', 'W4', 'W5'];
-        const metrics = ['POP', 'LTR', 'Unscheduled', 'PM', 'Total RFU', 'Total BID', 'PA Projection'];
+<h3>Input Data</h3>
+<table id="dataTable">
+  <thead>
+    <tr>
+      <th>Hari</th>
+      <th>Actual (%)</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr><td>1</td><td><input type="number" value="79"></td></tr>
+    <tr><td>2</td><td><input type="number" value="93"></td></tr>
+    <tr><td>3</td><td><input type="number" value="93"></td></tr>
+    <tr><td>4</td><td><input type="number" value="91"></td></tr>
+    <tr><td>5</td><td><input type="number" value="79"></td></tr>
+    <tr><td>6</td><td><input type="number" value="85"></td></tr>
+    <tr><td>7</td><td><input type="number" value="91"></td></tr>
+    <tr><td>8</td><td><input type="number" value="93"></td></tr>
+  </tbody>
+</table>
 
-        function createTable(title) {
-            const table = document.createElement('table');
-            table.setAttribute('data-title', title);
+<button onclick="generateChart()">Tampilkan Grafik</button>
 
-            const thead = document.createElement('thead');
-            const headerRow = document.createElement('tr');
-            const thTitle = document.createElement('th');
-            thTitle.textContent = title;
-            thTitle.className = 'loader-header';
-            headerRow.appendChild(thTitle);
+<canvas id="myChart" width="600" height="300"></canvas>
 
-            weeks.forEach(week => {
-                const th = document.createElement('th');
-                th.textContent = week;
-                th.className = 'week-header';
-                headerRow.appendChild(th);
-            });
-            thead.appendChild(headerRow);
-            table.appendChild(thead);
+<script>
+function generateChart() {
+  const table = document.getElementById('dataTable');
+  const labels = [];
+  const actualData = [];
+  const targetValue = 90;
 
-            const tbody = document.createElement('tbody');
-            metrics.forEach(metric => {
-                const row = document.createElement('tr');
-                row.className = metric === 'Total RFU' ? 'rfu' :
-                                metric === 'Total BID' ? 'bid' :
-                                metric === 'PA Projection' ? 'pa' : '';
-                const tdLabel = document.createElement('td');
-                tdLabel.textContent = metric;
-                row.appendChild(tdLabel);
+  for (let i = 1; i < table.rows.length; i++) {
+    const row = table.rows[i];
+    const hari = row.cells[0].innerText;
+    const actual = parseFloat(row.cells[1].querySelector('input').value);
+    labels.push(hari);
+    actualData.push(actual);
+  }
 
-                weeks.forEach(() => {
-                    const td = document.createElement('td');
-                    if (['POP', 'LTR', 'Unscheduled', 'PM'].includes(metric)) {
-                        td.setAttribute('contenteditable', 'true');
-                        td.addEventListener('input', updateCalculations);
-                    }
-                    row.appendChild(td);
-                });
-                tbody.appendChild(row);
-            });
-            table.appendChild(tbody);
-            return table;
+  const ctx = document.getElementById('myChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Actual',
+          data: actualData,
+          borderColor: 'blue',
+          backgroundColor: 'blue',
+          fill: false,
+          tension: 0.3,
+          pointRadius: 5
+        },
+        {
+          label: 'Target',
+          data: Array(labels.length).fill(targetValue),
+          borderColor: 'red',
+          borderDash: [5, 5],
+          fill: false
         }
-
-        function addNewGroup() {
-            const group = document.createElement('div');
-            group.className = 'table-group';
-
-            const sitarum = createTable(prompt("Enter name for Sitarum Loader", "Sitarum"));
-            const tabuhan = createTable(prompt("Enter name for Tabuhan Loader", "Tabuhan"));
-            const bmb = createTable("BMB Cluster");
-
-            group.appendChild(sitarum);
-            group.appendChild(tabuhan);
-            group.appendChild(bmb);
-            document.getElementById('tables').appendChild(group);
+      ]
+    },
+    options: {
+      plugins: {
+        title: {
+          display: true,
+          text: 'Grafik September'
         }
-
-        function updateCalculations() {
-            document.querySelectorAll('.table-group').forEach(group => {
-                const tables = group.querySelectorAll('table');
-                if (tables.length === 3) {
-                    const [sitarum, tabuhan, bmb] = tables;
-
-                    weeks.forEach((_, i) => {
-                        const sitarumValues = getMetricValues(sitarum, i);
-                        const tabuhanValues = getMetricValues(tabuhan, i);
-
-                        const bmbPOP = sitarumValues.POP + tabuhanValues.POP;
-                        const bmbLTR = sitarumValues.LTR + tabuhanValues.LTR;
-                        const bmbUnscheduled = sitarumValues.Unscheduled + tabuhanValues.Unscheduled;
-                        const bmbPM = sitarumValues.PM + tabuhanValues.PM;
-
-                        const bmbRFU = bmbPOP - (bmbLTR + bmbUnscheduled + bmbPM);
-                        const bmbBID = bmbLTR + bmbUnscheduled + bmbPM;
-                        const bmbPA = bmbPOP ? ((bmbRFU / bmbPOP) * 100).toFixed(2) : '';
-
-                        setMetricValue(bmb, 'POP', i, bmbPOP);
-                        setMetricValue(bmb, 'LTR', i, bmbLTR);
-                        setMetricValue(bmb, 'Unscheduled', i, bmbUnscheduled);
-                        setMetricValue(bmb, 'PM', i, bmbPM);
-                        setMetricValue(bmb, 'Total RFU', i, bmbRFU);
-                        setMetricValue(bmb, 'Total BID', i, bmbBID);
-                        setMetricValue(bmb, 'PA Projection', i, bmbPA);
-
-                        [sitarum, tabuhan].forEach(table => {
-                            const values = getMetricValues(table, i);
-                            const rfu = values.POP - (values.LTR + values.Unscheduled + values.PM);
-                            const bid = values.LTR + values.Unscheduled + values.PM;
-                            const pa = values.POP ? ((rfu / values.POP) * 100).toFixed(2) : '';
-                            setMetricValue(table, 'Total RFU', i, rfu);
-                            setMetricValue(table, 'Total BID', i, bid);
-                            setMetricValue(table, 'PA Projection', i, pa);
-                        });
-                    });
-                }
-            });
+      },
+      scales: {
+        y: {
+          beginAtZero: true,
+          max: 100,
+          ticks: {
+            callback: value => value + '%'
+          }
         }
+      }
+    }
+  });
+}
+</script>
 
-        function getMetricValues(table, index) {
-            const values = {};
-            ['POP', 'LTR', 'Unscheduled', 'PM'].forEach(metric => {
-                const row = Array.from(table.rows).find(r => r.cells[0].textContent === metric);
-                const cell = row.cells[index + 1];
-                values[metric] = parseFloat(cell.textContent) || 0;
-            });
-            return values;
-        }
-
-        function setMetricValue(table, metric, index, value) {
-            const row = Array.from(table.rows).find(r => r.cells[0].textContent === metric);
-            const cell = row.cells[index + 1];
-            cell.textContent = value;
-        }
-
-        function saveJSON() {
-            const data = [];
-            document.querySelectorAll('.table-group').forEach(group => {
-                const tables = group.querySelectorAll('table');
-                tables.forEach(table => {
-                    const title = table.getAttribute('data-title');
-                    const tableData = { title, data: {} };
-                    metrics.forEach(metric => {
-                        const row = Array.from(table.rows).find(r => r.cells[0].textContent === metric);
-                        tableData.data[metric] = weeks.map((_, i) => row.cells[i + 1].textContent);
-                    });
-                    data.push(tableData);
-                });
-            });
-            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(blob);
-            a.download = 'loader_data.json';
-            a.click();
-        }
-
-        function loadJSON() {
-            const input = document.createElement('input');
-            input.type = 'file';
-            input.accept = '.json';
-            input.onchange = e => {
-                const file = e.target.files[0];
-                const reader = new FileReader();
-                reader.onload = () => {
-                    const data = JSON.parse(reader.result);
-                    document.getElementById('tables').innerHTML = '';
-                    for (let i = 0; i < data.length; i += 3) {
-                        const group = document.createElement('div');
-                        group.className = 'table-group';
-                        [data[i], data[i+1], data[i+2]].forEach(entry => {
-                            const table = createTable(entry.title);
-                            metrics.forEach((metric, mi) => {
-                                weeks.forEach((_, wi) => {
-                                    const row = Array.from(table.rows).find(r => r.cells[0].textContent === metric);
-                                    row.cells[wi + 1].textContent = entry.data[metric][wi];
-                                });
-                            });
-                            group.appendChild(table);
-                        });
-                        document.getElementById('tables').appendChild(group);
-                    }
-                    updateCalculations();
-                };
-                reader.readAsText(file);
-            };
-            input.click();
-        }
-    </script>
 </body>
 </html>
