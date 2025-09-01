@@ -52,7 +52,7 @@
 
 <script>
 let dataByCategory = {
-  "Hauling":[{no:1,items:[{issue:"List Tools 800 item (Teregister Asset)",actions:["Update collect masing-masing section status tools"],pic:"By Section",due:"Juni",status:"Continue",remarks:"Continue SE; Done; Track; Done; Wheel: 15 Juli; Audit: 23 Juli"}]}],
+  "Hauling":[{no:1,items:[{equipment:"List Tools 800 item (Teregister Asset)",actions:["Update collect masing-masing section status tools"],pic:"By Section",due:"Juni",status:"Continue",remarks:"Continue SE; Done; Track; Done; Wheel: 15 Juli; Audit: 23 Juli"}]}],
   "Loading":[],
   "Dozing":[]
 };
@@ -102,7 +102,7 @@ function renderAllTables(){
           <th>No</th><th>Equipment</th><th>Description</th><th>Down Time</th><th>Up Time</th><th>Order</th><th>Remarks</th><th>Action</th>
         </tr></thead>
         <tbody id="tbody-${safeId}"></tbody>
-        <tfoot><tr><td colspan="8"><button onclick='addIssue(${JSON.stringify(category)})'>Add New Issue</button></td></tr></tfoot>
+        <tfoot><tr><td colspan="8"><button onclick='addEquipment(${JSON.stringify(category)})'>Add New Equipment</button></td></tr></tfoot>
       </table>
     `;
     container.appendChild(section);
@@ -166,7 +166,7 @@ function deleteCategory(category){ if(confirm('Yakin hapus kategori "'+category+
 
 // --- Equipement / Sub Item ---
 function addNewCategory(){ const input=document.getElementById("newCategoryInput"); const newCategory=input.value.trim(); if(newCategory&&!dataByCategory[newCategory]){dataByCategory[newCategory]=[]; input.value=""; renderAllTables();} else {alert("Kategori sudah ada atau kosong.");} }
-function addEquipment(category){ updateAllFromTable(); const newIssue={no:dataByCategory[category].length+1,items:[{equipment:"New Equipment",description:["Initial Description"],downtime:"Down Time",uptime:"Up Time",order:"Open",remarks:""}]}; dataByCategory[category].push(newIssue); renderAllTables(); }
+function addEquipment(category){ updateAllFromTable(); const newEquipment={no:dataByCategory[category].length+1,items:[{equipment:"New Equipment",description:["Initial Description"],downtime:"Down Time",uptime:"Up Time",order:"Open",remarks:""}]}; dataByCategory[category].push(newEquipment); renderAllTables(); }
 function addSubItem(category,no){ updateAllFromTable(); const entry=dataByCategory[category].find(d=>d.no===no); if(entry){entry.items.push({equipment:"",description:[""],downtime:"",uptime:"",order:"",remarks:""}); renderAllTables(); } }
 function saveEdit(category,no,idx){ updateAllFromTable(); renderAllTables(); }
 function deleteItem(category,no,idx){ updateAllFromTable(); const entry=dataByCategory[category].find(d=>d.no===no); if(entry){entry.items.splice(idx,1); if(entry.items.length===0){dataByCategory[category]=dataByCategory[category].filter(d=>d.no!==no);} renderAllTables();} }
