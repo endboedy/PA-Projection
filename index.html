@@ -32,6 +32,7 @@
     }
     .category-header span.action-text { margin-left: 10px; }
     input[type="date"] { width: 100%; border: none; background: transparent; }
+    .toggle-no { cursor: pointer; color: blue; text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -81,8 +82,8 @@ function updateAllFromTable(){
         item.equipment = cells[1].innerText.trim();
         item.description = cells[2].innerText.trim();
         if(idx===0){ // hanya row utama yg simpan Down/Up
-          item.down = cells[3].querySelector("input").value;
-          item.up = cells[4].querySelector("input").value;
+          item.down = cells[3].querySelector("input") ? cells[3].querySelector("input").value : "";
+          item.up = cells[4].querySelector("input") ? cells[4].querySelector("input").value : "";
         }
         item.order = cells[5].innerText.trim();
         item.remarks = cells[6].innerText.trim();
@@ -119,32 +120,36 @@ function renderAllTables(){
     dataByCategory[category].forEach(entry=>{
       entry.items.forEach((item,subIdx)=>{
         const tr = document.createElement("tr");
+        tr.dataset.no = entry.no; // untuk collapse
+        tr.dataset.subidx = subIdx;
         tr.innerHTML = `
-          
-<td>${subIdx === 0 ? entry.no : ""}</td>
+<td ${subIdx===0 ? 'class="toggle-no" onclick="toggleSubItems(\''+safeId+'\','+entry.no+')"':'">' + (subIdx===0 ? entry.no : "") + `</td>
 <td contenteditable="true">${escapeHtml(item.equipment || "")}</td>
 <td contenteditable="true">${escapeHtml(item.description || "")}</td>
-<td>
-  ${subIdx === 0 ? `<input type="date" value="${item.down || ""}">` : ""}
-</td>
-<td>
-  ${subIdx === 0 ? `<input type="date" value="${item.up || ""}">` : ""}
-</td>
+<td>${subIdx===0 ? <input type="date" value="${item.down || ""}"> : ""}</td>
+<td>${subIdx===0 ? <input type="date" value="${item.up || ""}"> : ""}</td>
 <td contenteditable="true">${escapeHtml(item.order || "")}</td>
 <td contenteditable="true">${escapeHtml(item.remarks || "")}</td>
-
-<span class="action-text" onclick='addSubItem(${JSON.stringify(category)}, ${entry.no})'>Add Sub</span>
-<span class="action-text" onclick='saveEdit(${JSON.stringify(category)}, ${entry.no}, ${subIdx})'>Save</span>
-<span class="action-text" onclick='deleteItem(${JSON.stringify(category)}, ${entry.no}, ${subIdx})'>Delete</span>
-
-            <span class="action-text" onclick='addSubItem(${JSON.stringify(category)},${entry.no})'>Add Sub</span>
-            <span class="action-text" onclick='saveEdit(${JSON.stringify(category)},${entry.no},${subIdx})'>Save</span>
-            <span class="action-text" onclick='deleteItem(${JSON.stringify(category)},${entry.no},${subIdx})'>Delete</span>
-          </td>
+<td>
+  <span class="action-text" onclick='addSubItem(${JSON.stringify(category)},${entry.no})'>Add Sub</span>
+  <span class="action-text" onclick='saveEdit(${JSON.stringify(category)},${entry.no},${subIdx})'>Save</span>
+  <span class="action-text" onclick='deleteItem(${JSON.stringify(category)},${entry.no},${subIdx})'>Delete</span>
+</td>
         `;
         tbody.appendChild(tr);
       });
     });
+  });
+}
+
+// --- Collapse / Expand Sub Items ---
+function toggleSubItems(safeId,no){
+  const tbody = document.getElementById('tbody-'+safeId);
+  if(!tbody) return;
+  Array.from(tbody.querySelectorAll('tr')).forEach(tr=>{
+    if(parseInt(tr.dataset.no) === no && parseInt(tr.dataset.subidx) !== 0){
+      tr.style.display = tr.style.display === 'none' ? '' : 'none';
+    }
   });
 }
 
