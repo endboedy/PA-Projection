@@ -72,12 +72,13 @@ function updateAllFromTable(){
       entry.items.forEach((item,idx)=>{
         const row = tbody.querySelectorAll('tr')[rowCount++];
         const cells = row.querySelectorAll('td');
-        item.equipment = cells[1].innerText.trim();
-        item.description = cells[2].innerText.split('\n').map(a=>a.trim());
-        item.downtime = cells[3].innerText.trim();
-        item.uptime = cells[4].innerText.trim();
-        item.order = cells[5].innerText.trim();
-        item.remarks = cells[6].innerText.trim();
+        item.no = cells[1].innerText.trim();
+        item.equipment = cells[2].innerText.trim();
+        item.description = cells[3].innerText.split('\n').map(a=>a.trim());
+        item.downtime = cells[4].innerText.trim();
+        item.uptime = cells[5].innerText.trim();
+        item.order = cells[6].innerText.trim();
+        item.remarks = cells[7].innerText.trim();
       });
     });
   });
