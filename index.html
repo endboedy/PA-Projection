@@ -122,14 +122,14 @@ function renderAllTables(){
         const tr = document.createElement("tr");
         tr.dataset.no = entry.no; // untuk collapse
         tr.dataset.subidx = subIdx;
-        tr.innerHTML = `
-<td ${subIdx===0 ? 'class="toggle-no" onclick="toggleSubItems(\''+safeId+'\','+entry.no+')"' : ''}>
+      tr.innerHTML = `
+<td ${subIdx===0 ? class="toggle-no" onclick="toggleSubItems('${safeId}',${entry.no})" : ''}>
   ${subIdx===0 ? entry.no : ""}
 </td>
 <td contenteditable="true">${escapeHtml(item.equipment || "")}</td>
 <td contenteditable="true">${escapeHtml(item.description || "")}</td>
-<td>${subIdx===0 ? <input type="date" value="${item.down || ""}"> : ""}</td>
-<td>${subIdx===0 ? <input type="date" value="${item.up || ""}"> : ""}</td>
+<td>${subIdx===0 ? `<input type="date" value="${item.down || ''}"> : ''`}</td>
+<td>${subIdx===0 ? `<input type="date" value="${item.up || ''}"> : ''`}</td>
 <td contenteditable="true">${escapeHtml(item.order || "")}</td>
 <td contenteditable="true">${escapeHtml(item.remarks || "")}</td>
 <td>
@@ -137,7 +137,7 @@ function renderAllTables(){
   <span class="action-text" onclick='saveEdit(${JSON.stringify(category)},${entry.no},${subIdx})'>Save</span>
   <span class="action-text" onclick='deleteItem(${JSON.stringify(category)},${entry.no},${subIdx})'>Delete</span>
 </td>
-        `;
+`;
         tbody.appendChild(tr);
       });
     });
