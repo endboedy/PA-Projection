@@ -123,11 +123,13 @@ function renderAllTables(){
         tr.dataset.no = entry.no; // untuk collapse
         tr.dataset.subidx = subIdx;
         tr.innerHTML = `
-<td ${subIdx===0 ? 'class="toggle-no" onclick="toggleSubItems(\''+safeId+'\','+entry.no+')"':'">' + (subIdx===0 ? entry.no : "") + `</td>
+<td ${subIdx===0 ? 'class="toggle-no" onclick="toggleSubItems(\''+safeId+'\','+entry.no+')"' : ''}>
+  ${subIdx===0 ? entry.no : ""}
+</td>
 <td contenteditable="true">${escapeHtml(item.equipment || "")}</td>
 <td contenteditable="true">${escapeHtml(item.description || "")}</td>
 <td>${subIdx===0 ? <input type="date" value="${item.down || ""}"> : ""}</td>
-<td>${subIdx===0 ? <input type="date" value="${item.up || ""}"> : ""}</td>
+<td>${subIdx===0 ? <input type="date" value="${item.up || ""}"> : ""}</td>
 <td contenteditable="true">${escapeHtml(item.order || "")}</td>
 <td contenteditable="true">${escapeHtml(item.remarks || "")}</td>
 <td>
